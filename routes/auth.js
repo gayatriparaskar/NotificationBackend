@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 const { validateUserRegistration, validateUserLogin } = require('../middleware/validation');
-
+const dotenv = require('dotenv');
+dotenv.config();
 const router = express.Router();
 
 // Generate JWT token

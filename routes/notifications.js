@@ -1,5 +1,5 @@
 const express = require('express');
-const NotificationService = require('../services/notificationService');
+const { NotificationService } = require('../services/notificationService');
 const { protect } = require('../middleware/auth');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
 
@@ -45,7 +45,7 @@ router.get('/unread-count', protect, async (req, res) => {
 
     res.json({
       success: true,
-      data: { count }
+      data: { unreadCount: count }
     });
   } catch (error) {
     console.error('Get unread count error:', error);

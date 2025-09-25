@@ -3,7 +3,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { protect, authorize } = require('../middleware/auth');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
-const NotificationService = require('../services/notificationService');
+const { NotificationService } = require('../services/notificationService');
 
 const router = express.Router();
 
@@ -137,10 +137,10 @@ router.post('/', protect, authorize('customer'), async (req, res) => {
         });
       }
 
-      if (!product.isAvailable || product.stock < item.quantity) {
+      if (!product.isActive || product.quantity < item.quantity) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient stock for ${product.name}. Available: ${product.stock}`
+          message: `Insufficient stock for ${product.name}. Available: ${product.quantity}`
         });
       }
 
@@ -177,7 +177,7 @@ router.post('/', protect, authorize('customer'), async (req, res) => {
     for (const item of orderItems) {
       await Product.findByIdAndUpdate(
         item.product,
-        { $inc: { stock: -item.quantity } }
+        { $inc: { quantity: -item.quantity } }
       );
     }
 
@@ -188,7 +188,9 @@ router.post('/', protect, authorize('customer'), async (req, res) => {
     ]);
 
     // Send notifications
+    console.log('Sending order placed notifications for order:', order._id);
     await NotificationService.notifyOrderPlaced(order._id);
+    console.log('Order placed notifications sent successfully');
 
     res.status(201).json({
       success: true,
@@ -269,6 +271,129 @@ router.put('/:id/status', protect, authorize('admin'), validateObjectId, async (
   }
 });
 
+// @route   POST /api/orders/:id/confirm
+// @desc    Confirm order (Admin only)
+// @access  Private (Admin)
+router.post('/:id/confirm', protect, authorize('admin'), validateObjectId, async (req, res) => {
+  try {
+    const { notes } = req.body;
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only pending orders can be confirmed'
+      });
+    }
+
+    // Update order status to confirmed
+    order.status = 'confirmed';
+    if (notes) order.notes.admin = notes;
+
+    await order.save();
+
+    // Send notification
+    console.log('Sending order confirmation notification for order:', order._id);
+    await NotificationService.notifyOrderStatusUpdate(order._id, 'confirmed');
+    console.log('Order confirmation notification sent successfully');
+
+    // Populate the order with related data
+    await order.populate([
+      { path: 'customer', select: 'name email phone' },
+      { path: 'items.product', select: 'name images species morph' }
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Order confirmed successfully',
+      data: { order }
+    });
+  } catch (error) {
+    console.error('Confirm order error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error confirming order',
+      error: error.message
+    });
+  }
+});
+
+// @route   POST /api/orders/:id/reject
+// @desc    Reject order (Admin only)
+// @access  Private (Admin)
+router.post('/:id/reject', protect, authorize('admin'), validateObjectId, async (req, res) => {
+  try {
+    const { reason, notes } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rejection reason is required'
+      });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only pending orders can be rejected'
+      });
+    }
+
+    // Update order status to cancelled and add rejection reason
+    order.status = 'cancelled';
+    order.cancellationReason = reason;
+    order.cancelledAt = new Date();
+    if (notes) order.notes.admin = notes;
+
+    // Restore product stock since order is rejected
+    for (const item of order.items) {
+      await Product.findByIdAndUpdate(
+        item.product,
+        { $inc: { quantity: item.quantity } }
+      );
+    }
+
+    await order.save();
+
+    // Send notification
+    await NotificationService.notifyOrderStatusUpdate(order._id, 'cancelled');
+
+    // Populate the order with related data
+    await order.populate([
+      { path: 'customer', select: 'name email phone' },
+      { path: 'items.product', select: 'name images species morph' }
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Order rejected successfully',
+      data: { order }
+    });
+  } catch (error) {
+    console.error('Reject order error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error rejecting order',
+      error: error.message
+    });
+  }
+});
+
 // @route   POST /api/orders/:id/cancel
 // @desc    Cancel order
 // @access  Private
@@ -320,7 +445,7 @@ router.post('/:id/cancel', protect, validateObjectId, async (req, res) => {
     for (const item of order.items) {
       await Product.findByIdAndUpdate(
         item.product,
-        { $inc: { stock: item.quantity } }
+        { $inc: { quantity: item.quantity } }
       );
     }
 

@@ -2,7 +2,7 @@ const express = require('express');
 const Product = require('../models/Product');
 const { protect, authorize } = require('../middleware/auth');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
-const NotificationService = require('../services/notificationService');
+const { NotificationService } = require('../services/notificationService');
 
 const router = express.Router();
 
@@ -16,29 +16,11 @@ router.get('/', validatePagination, async (req, res) => {
     const skip = (page - 1) * limit;
     
     // Build filter object
-    const filter = { isActive: true, isAvailable: true };
-    
-    if (req.query.category) {
-      filter.category = req.query.category;
-    }
-    
-    if (req.query.species) {
-      filter.species = { $regex: req.query.species, $options: 'i' };
-    }
-    
-    if (req.query.morph) {
-      filter.morph = { $regex: req.query.morph, $options: 'i' };
-    }
-    
-    if (req.query.age) {
-      filter.age = req.query.age;
-    }
+    const filter = { isActive: true };
     
     if (req.query.search) {
       filter.$or = [
         { name: { $regex: req.query.search, $options: 'i' } },
-        { species: { $regex: req.query.search, $options: 'i' } },
-        { morph: { $regex: req.query.search, $options: 'i' } },
         { description: { $regex: req.query.search, $options: 'i' } }
       ];
     }
@@ -50,9 +32,9 @@ router.get('/', validatePagination, async (req, res) => {
       if (req.query.maxPrice) filter.price.$lte = parseFloat(req.query.maxPrice);
     }
 
-    // Stock filter
+    // Quantity filter
     if (req.query.inStock === 'true') {
-      filter.stock = { $gt: 0 };
+      filter.quantity = { $gt: 0 };
     }
 
     const products = await Product.find(filter)

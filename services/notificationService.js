@@ -3,12 +3,36 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 
+// Socket.IO instance (will be set by server)
+let io = null;
+
+// Set the Socket.IO instance
+const setSocketIO = (socketIO) => {
+  io = socketIO;
+};
+
 class NotificationService {
   // Create a notification
   static async createNotification(notificationData) {
     try {
+      console.log('NotificationService: Creating notification for recipient:', notificationData.recipient);
+      console.log('NotificationService: Notification type:', notificationData.type);
+      console.log('NotificationService: Notification title:', notificationData.title);
+      
       const notification = new Notification(notificationData);
       await notification.save();
+      
+      console.log('NotificationService: Notification created successfully with ID:', notification._id);
+      
+      // Emit real-time notification
+      if (io) {
+        io.to(`user-${notificationData.recipient}`).emit('new-notification', {
+          notification: notification,
+          unreadCount: await this.getUnreadCount(notificationData.recipient)
+        });
+        console.log('NotificationService: Real-time notification sent to user:', notificationData.recipient);
+      }
+      
       return notification;
     } catch (error) {
       console.error('Error creating notification:', error);
@@ -19,6 +43,8 @@ class NotificationService {
   // Send order placed notification to admin and customer
   static async notifyOrderPlaced(orderId) {
     try {
+      console.log('NotificationService: Starting notifyOrderPlaced for order:', orderId);
+      
       const order = await Order.findById(orderId)
         .populate('customer', 'name email')
         .populate('items.product', 'name');
@@ -27,8 +53,12 @@ class NotificationService {
         throw new Error('Order not found');
       }
 
+      console.log('NotificationService: Order found:', order.orderNumber);
+      console.log('NotificationService: Customer:', order.customer.name);
+
       // Get admin users
       const admins = await User.find({ role: 'admin', isActive: true });
+      console.log('NotificationService: Found', admins.length, 'admin users');
 
       // Notify customer
       await this.createNotification({
@@ -111,6 +141,10 @@ class NotificationService {
 
       const statusInfo = statusMessages[newStatus];
       if (statusInfo) {
+        console.log(`NotificationService: Creating ${newStatus} notification for customer:`, order.customer._id);
+        console.log(`NotificationService: Order:`, order.orderNumber);
+        console.log(`NotificationService: Customer:`, order.customer.name);
+        
         await this.createNotification({
           recipient: order.customer._id,
           type: `order_${newStatus}`,
@@ -156,7 +190,7 @@ class NotificationService {
           recipient: admin._id,
           type: 'stock_low',
           title: 'Low Stock Alert!',
-          message: `${product.name} is running low on stock (${product.stock} remaining)`,
+          message: `${product.name} is running low on stock (${product.quantity} remaining)`,
           data: {
             productId: product._id,
             productName: product.name,
@@ -291,4 +325,4 @@ class NotificationService {
   }
 }
 
-module.exports = NotificationService;
+module.exports = { NotificationService, setSocketIO };

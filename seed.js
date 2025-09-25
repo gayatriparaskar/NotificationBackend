@@ -55,77 +55,35 @@ const demoProducts = [
   {
     name: 'Ball Python - Pastel Morph',
     description: 'Beautiful pastel ball python with excellent temperament. Perfect for beginners. Comes with health guarantee and care instructions.',
-    category: 'ball_python',
-    species: 'Python regius',
-    morph: 'Pastel',
-    age: 'juvenile',
-    size: { length: 18, unit: 'inches' },
-    weight: 0.8,
     price: 150,
-    stock: 5,
-    images: [
-      { url: 'https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=Pastel+Ball+Python', alt: 'Pastel Ball Python', isPrimary: true }
-    ],
-    features: ['Great temperament', 'Perfect for beginners', 'Healthy and feeding well'],
-    careInstructions: {
-      temperature: { hot: '88-92°F', cool: '75-80°F' },
-      humidity: '50-60%',
-      feeding: 'Frozen/thawed mice weekly',
-      housing: '20 gallon tank minimum'
-    },
-    healthGuarantee: '30 days health guarantee',
-    shipping: { available: true, cost: 25, estimatedDays: 2 },
-    tags: ['beginner-friendly', 'pastel', 'ball-python']
+    offerPrice: 120,
+    quantity: 5
   },
   {
     name: 'Corn Snake - Amelanistic',
     description: 'Stunning amelanistic corn snake with vibrant orange and red colors. Very docile and easy to handle.',
-    category: 'corn_snake',
-    species: 'Pantherophis guttatus',
-    morph: 'Amelanistic',
-    age: 'sub_adult',
-    size: { length: 24, unit: 'inches' },
-    weight: 1.2,
     price: 120,
-    stock: 3,
-    images: [
-      { url: 'https://via.placeholder.com/400x300/DC2626/FFFFFF?text=Amelanistic+Corn+Snake', alt: 'Amelanistic Corn Snake', isPrimary: true }
-    ],
-    features: ['Vibrant colors', 'Very docile', 'Great eater'],
-    careInstructions: {
-      temperature: { hot: '85-88°F', cool: '70-75°F' },
-      humidity: '40-50%',
-      feeding: 'Frozen/thawed mice every 7-10 days',
-      housing: '20 gallon tank minimum'
-    },
-    healthGuarantee: '30 days health guarantee',
-    shipping: { available: true, cost: 25, estimatedDays: 2 },
-    tags: ['docile', 'amelanistic', 'corn-snake']
+    quantity: 3
   },
   {
     name: 'King Snake - California',
     description: 'Beautiful California king snake with classic black and white banding. Hardy and easy to care for.',
-    category: 'king_snake',
-    species: 'Lampropeltis californiae',
-    morph: 'Classic',
-    age: 'adult',
-    size: { length: 36, unit: 'inches' },
-    weight: 2.1,
     price: 180,
-    stock: 2,
-    images: [
-      { url: 'https://via.placeholder.com/400x300/000000/FFFFFF?text=California+King+Snake', alt: 'California King Snake', isPrimary: true }
-    ],
-    features: ['Classic banding', 'Hardy species', 'Great for intermediate keepers'],
-    careInstructions: {
-      temperature: { hot: '82-85°F', cool: '70-75°F' },
-      humidity: '40-50%',
-      feeding: 'Frozen/thawed mice every 10-14 days',
-      housing: '30 gallon tank minimum'
-    },
-    healthGuarantee: '30 days health guarantee',
-    shipping: { available: true, cost: 30, estimatedDays: 3 },
-    tags: ['hardy', 'classic', 'king-snake']
+    offerPrice: 150,
+    quantity: 2
+  },
+  {
+    name: 'Milk Snake - Pueblan',
+    description: 'Striking Pueblan milk snake with bright red, black, and white bands. Great for beginners.',
+    price: 100,
+    quantity: 4
+  },
+  {
+    name: 'Boa Constrictor - Red Tail',
+    description: 'Beautiful red tail boa with excellent temperament. Perfect for experienced keepers.',
+    price: 300,
+    offerPrice: 250,
+    quantity: 1
   }
 ];
 
