@@ -22,9 +22,15 @@ router.get('/', protect, validatePagination, async (req, res) => {
       type
     });
 
+    // Get unread count
+    const unreadCount = await NotificationService.getUnreadCount(req.user.id);
+
     res.json({
       success: true,
-      data: result
+      data: {
+        ...result,
+        unreadCount
+      }
     });
   } catch (error) {
     console.error('Get notifications error:', error);
@@ -103,6 +109,39 @@ router.put('/mark-all-read', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error marking all notifications as read',
+      error: error.message
+    });
+  }
+});
+
+// @route   POST /api/notifications/test
+// @desc    Test notification endpoint
+// @access  Private
+router.post('/test', protect, async (req, res) => {
+  try {
+    console.log('Test notification endpoint called for user:', req.user.id);
+    
+    const testNotification = await NotificationService.createNotification({
+      recipient: req.user.id,
+      type: 'test',
+      title: 'Test Notification',
+      message: 'This is a test notification to verify real-time functionality',
+      data: {
+        url: '/',
+        test: true
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Test notification sent',
+      data: { notification: testNotification }
+    });
+  } catch (error) {
+    console.error('Test notification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending test notification',
       error: error.message
     });
   }

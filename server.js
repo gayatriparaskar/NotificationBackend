@@ -61,6 +61,11 @@ io.on('connection', (socket) => {
     console.log(`User ${userId} joined their room`);
   });
   
+  socket.on('test-connection', (data) => {
+    console.log('Test connection received:', data);
+    socket.emit('test-connection-response', { message: 'Hello from backend', timestamp: new Date() });
+  });
+  
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
@@ -100,7 +105,7 @@ app.use('*', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
