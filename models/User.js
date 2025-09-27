@@ -49,12 +49,24 @@ const userSchema = new mongoose.Schema({
   preferences: {
     notifications: {
       email: { type: Boolean, default: true },
-      sms: { type: Boolean, default: false }
+      sms: { type: Boolean, default: false },
+      push: { type: Boolean, default: true }
     },
     timezone: {
       type: String,
       default: 'UTC'
     }
+  },
+  pushSubscription: {
+    endpoint: String,
+    keys: {
+      p256dh: String,
+      auth: String
+    }
+  },
+  pushSubscriptionUpdatedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

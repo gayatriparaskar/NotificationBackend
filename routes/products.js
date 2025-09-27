@@ -67,6 +67,48 @@ router.get('/', validatePagination, async (req, res) => {
   }
 });
 
+// @route   GET /api/products/categories
+// @desc    Get all product categories
+// @access  Public
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = await Product.distinct('category', { isActive: true });
+    
+    res.json({
+      success: true,
+      data: { categories }
+    });
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching categories',
+      error: error.message
+    });
+  }
+});
+
+// @route   GET /api/products/species
+// @desc    Get all snake species
+// @access  Public
+router.get('/species', async (req, res) => {
+  try {
+    const species = await Product.distinct('species', { isActive: true });
+    
+    res.json({
+      success: true,
+      data: { species }
+    });
+  } catch (error) {
+    console.error('Get species error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching species',
+      error: error.message
+    });
+  }
+});
+
 // @route   GET /api/products/:id
 // @desc    Get single product
 // @access  Public
@@ -213,48 +255,6 @@ router.delete('/:id', protect, authorize('admin'), validateObjectId, async (req,
     res.status(500).json({
       success: false,
       message: 'Error deleting product',
-      error: error.message
-    });
-  }
-});
-
-// @route   GET /api/products/categories
-// @desc    Get all product categories
-// @access  Public
-router.get('/categories', async (req, res) => {
-  try {
-    const categories = await Product.distinct('category', { isActive: true });
-    
-    res.json({
-      success: true,
-      data: { categories }
-    });
-  } catch (error) {
-    console.error('Get categories error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching categories',
-      error: error.message
-    });
-  }
-});
-
-// @route   GET /api/products/species
-// @desc    Get all snake species
-// @access  Public
-router.get('/species', async (req, res) => {
-  try {
-    const species = await Product.distinct('species', { isActive: true });
-    
-    res.json({
-      success: true,
-      data: { species }
-    });
-  } catch (error) {
-    console.error('Get species error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching species',
       error: error.message
     });
   }

@@ -33,6 +33,33 @@ const productSchema = new mongoose.Schema({
     min: [0, 'Quantity cannot be negative'],
     default: 0
   },
+  stock: {
+    type: Number,
+    min: [0, 'Stock cannot be negative'],
+    default: function() {
+      return this.quantity;
+    }
+  },
+  category: {
+    type: String,
+    required: [true, 'Product category is required'],
+    trim: true,
+    lowercase: true
+  },
+  species: {
+    type: String,
+    trim: true,
+    lowercase: true
+  },
+  difficulty: {
+    type: String,
+    enum: ['beginner', 'intermediate', 'advanced'],
+    default: 'beginner'
+  },
+  images: [{
+    url: String,
+    alt: String
+  }],
   isActive: {
     type: Boolean,
     default: true
@@ -50,6 +77,9 @@ const productSchema = new mongoose.Schema({
 productSchema.index({ isActive: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ createdBy: 1 });
+productSchema.index({ category: 1 });
+productSchema.index({ species: 1 });
+productSchema.index({ difficulty: 1 });
 
 // Virtual for formatted price
 productSchema.virtual('formattedPrice').get(function() {

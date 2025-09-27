@@ -2,6 +2,7 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const webPushService = require('./webPushService');
 
 // Socket.IO instance (will be set by server)
 let io = null;
@@ -32,6 +33,22 @@ class NotificationService {
         });
         console.log('NotificationService: Real-time notification sent to user:', notificationData.recipient);
       }
+
+      // Send web push notification if enabled
+      try {
+        const user = await User.findById(notificationData.recipient);
+        if (user && user.pushSubscription && user.preferences?.notifications?.push !== false) {
+          const pushResult = await webPushService.sendPushNotification(notificationData.recipient, notification);
+          if (pushResult.success) {
+            console.log('NotificationService: Web push notification sent to user:', notificationData.recipient);
+          } else {
+            console.log('NotificationService: Web push notification failed:', pushResult.message);
+          }
+        }
+      } catch (pushError) {
+        console.error('NotificationService: Error sending web push notification:', pushError);
+        // Don't throw error for push notification failures
+      }
       
       return notification;
     } catch (error) {
@@ -60,36 +77,50 @@ class NotificationService {
       const admins = await User.find({ role: 'admin', isActive: true });
       console.log('NotificationService: Found', admins.length, 'admin users');
 
-      // Notify customer
-      await this.createNotification({
-        recipient: order.customer._id,
-        type: 'order_placed',
-        title: 'Order Placed Successfully!',
-        message: `Your order #${order.orderNumber} has been placed successfully. We'll process it soon.`,
-        data: {
-          orderId: order._id,
-          orderNumber: order.orderNumber,
-          amount: order.totalAmount,
-          url: `/my-orders/${order._id}`
-        },
-        priority: 'high',
-        channels: ['in_app', 'email']
-      });
-
-      // Notify all admins
-      for (const admin of admins) {
+      // Check if customer is also an admin to avoid duplicate notifications
+      const customerIsAdmin = admins.some(admin => admin._id.toString() === order.customer._id.toString());
+      console.log('NotificationService: Customer is admin:', customerIsAdmin);
+      console.log('NotificationService: Customer ID:', order.customer._id.toString());
+      console.log('NotificationService: Admin IDs:', admins.map(admin => admin._id.toString()));
+      
+      // Notify customer (only if they're not an admin, or if they are admin, give them customer notification)
+      if (!customerIsAdmin) {
         await this.createNotification({
-          recipient: admin._id,
+          recipient: order.customer._id,
           type: 'order_placed',
-          title: 'New Order Received!',
-          message: `New order #${order.orderNumber} from ${order.customer.name} for $${order.totalAmount}`,
+          title: 'Order Placed Successfully!',
+          message: `Your order #${order.orderNumber} has been placed successfully. We'll process it soon.`,
           data: {
             orderId: order._id,
             orderNumber: order.orderNumber,
             amount: order.totalAmount,
-            url: `/admin/orders/${order._id}`
+            url: `/my-orders/${order._id}`
           },
-          priority: 'urgent',
+          priority: 'high',
+          channels: ['in_app', 'email']
+        });
+      }
+
+      // Notify all admins (including the customer if they're an admin)
+      for (const admin of admins) {
+        await this.createNotification({
+          recipient: admin._id,
+          type: 'order_placed',
+          title: customerIsAdmin && admin._id.toString() === order.customer._id.toString() 
+            ? 'Your Order Placed Successfully!' 
+            : 'New Order Received!',
+          message: customerIsAdmin && admin._id.toString() === order.customer._id.toString()
+            ? `Your order #${order.orderNumber} has been placed successfully. We'll process it soon.`
+            : `New order #${order.orderNumber} from ${order.customer.name} for $${order.totalAmount}`,
+          data: {
+            orderId: order._id,
+            orderNumber: order.orderNumber,
+            amount: order.totalAmount,
+            url: customerIsAdmin && admin._id.toString() === order.customer._id.toString()
+              ? `/my-orders/${order._id}`
+              : `/admin/orders/${order._id}`
+          },
+          priority: customerIsAdmin && admin._id.toString() === order.customer._id.toString() ? 'high' : 'urgent',
           channels: ['in_app', 'email']
         });
       }

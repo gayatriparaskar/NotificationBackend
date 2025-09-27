@@ -1,12 +1,12 @@
+// Load environment variables FIRST
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const http = require('http');
 const socketIo = require('socket.io');
-
-// Load environment variables
-dotenv.config();
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -14,12 +14,13 @@ const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const notificationRoutes = require('./routes/notifications');
 const userRoutes = require('./routes/users');
+const pushNotificationRoutes = require('./routes/pushNotificationsSimple');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin:"*",
     methods: ["GET", "POST"]
   }
 });
@@ -51,6 +52,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/push', pushNotificationRoutes);
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
@@ -85,6 +87,81 @@ app.get('/api/health', (req, res) => {
     message: 'Booking Platform API is running',
     timestamp: new Date().toISOString()
   });
+});
+
+// Test notification endpoint
+app.post('/api/test-notification', async (req, res) => {
+  try {
+    const { userId, message } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    const { NotificationService } = require('./services/notificationService');
+    
+    await NotificationService.createNotification({
+      recipient: userId,
+      type: 'test',
+      title: 'Test Notification',
+      message: message || 'This is a test notification from the backend!',
+      data: { url: '/dashboard' }
+    });
+
+    res.json({
+      success: true,
+      message: 'Test notification sent successfully'
+    });
+  } catch (error) {
+    console.error('Error sending test notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send test notification'
+    });
+  }
+});
+
+// Direct socket test endpoint
+app.post('/api/test-socket', (req, res) => {
+  try {
+    const { userId, message } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    // Send direct socket event
+    io.to(`user-${userId}`).emit('new-notification', {
+      notification: {
+        _id: 'test-' + Date.now(),
+        title: 'Direct Socket Test',
+        message: message || 'This is a direct socket test notification!',
+        type: 'test',
+        data: { url: '/dashboard' },
+        createdAt: new Date()
+      },
+      unreadCount: 1
+    });
+
+    console.log(`Direct socket notification sent to user: ${userId}`);
+
+    res.json({
+      success: true,
+      message: 'Direct socket notification sent successfully'
+    });
+  } catch (error) {
+    console.error('Error sending direct socket notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send direct socket notification'
+    });
+  }
 });
 
 // Error handling middleware
